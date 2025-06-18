@@ -55,6 +55,8 @@ st.sidebar.markdown("""
 - Get instant answers with voice!
 - Powered by ChatGPT (OpenAI) for all questions.
 
+**Note:** Voice input may not work in cloud environments. Use text input as a reliable alternative.
+
 **Sample Questions:**
   - What should we know about your life story?
   - What's your number one superpower?
@@ -115,14 +117,21 @@ def main():
 
     col1, col2 = st.columns([1, 1])
     with col1:
-        option = st.radio("Choose input method:", ["🎤 Speak", "⌨️ Type"], index=0)
+        option = st.radio("Choose input method:", ["⌨️ Type", "🎤 Speak"], index=0)
 
     user_question, response, error = None, None, None
 
-    if option == "🎤 Speak":
+    if option == "⌨️ Type":
+        user_question = st.text_input("Type your question here:")
+        if st.button("💬 Ask") and user_question:
+            st.markdown(f'<div class="question-box">You asked: <b>{user_question}</b></div>', unsafe_allow_html=True)
+            response = get_response(user_question)
+
+    elif option == "🎤 Speak":
+        st.info("🎤 Voice input may not work in cloud environments. For best results, use the text input option above.")
         if st.button("🎤 Record and Ask"):
-            r = sr.Recognizer()
             try:
+                r = sr.Recognizer()
                 with sr.Microphone() as source:
                     st.markdown('<div class="info-visible">Listening... Please speak clearly into your mic.</div>', unsafe_allow_html=True)
                     r.adjust_for_ambient_noise(source, duration=1)
@@ -135,20 +144,22 @@ def main():
                 error = "Sorry, I couldn't understand your voice."
             except sr.RequestError as e:
                 error = f"Speech Recognition error: {e}"
+            except OSError as e:
+                if "No Default Input Device Available" in str(e) or "portaudio" in str(e).lower():
+                    error = "Voice input is not available in this environment. Please use the text input option instead."
+                else:
+                    error = f"Microphone or audio error: {e}"
             except Exception as e:
                 error = f"Microphone or audio error: {e}"
-
-    elif option == "⌨️ Type":
-        user_question = st.text_input("Type your question here:")
-        if st.button("💬 Ask") and user_question:
-            st.markdown(f'<div class="question-box">You asked: <b>{user_question}</b></div>', unsafe_allow_html=True)
-            response = get_response(user_question)
 
     if error:
         st.markdown(f'<div class="response-box" style="color:#b91c1c;background:#ffeaea;border:1.5px solid #ff6a6a;">{error}</div>', unsafe_allow_html=True)
     if response:
         st.markdown(f'<div class="response-box">{response}</div>', unsafe_allow_html=True)
-        speak(response)
+        try:
+            speak(response)
+        except Exception as e:
+            st.info("🔊 Text-to-speech is not available in this environment, but you can read the response above.")
 
 if __name__ == "__main__":
     main()
