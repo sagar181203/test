@@ -12,7 +12,7 @@ except ImportError:
 
 # OpenAI API key using new Client API (v1.x+)
 client = OpenAI(
-    api_key="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"
+    api_key=st.secrets["OPENAI_API_KEY"]
 )
 
 # Streamlit page config
